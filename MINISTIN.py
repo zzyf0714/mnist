@@ -133,16 +133,15 @@ class Nerual_Network(object):
     # -----------------反向传播----------------------------
     def back_hiddenlayer(self, a, z, da, weight_matrix, b):
             dz = da * (z * (1 - z)) #sigmoid函数求导
-            #weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
-            weight_matrix -= self.learningrate * np.dot(a.T, dz) / 60000
+            weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
             b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
             da_n = np.dot(weight_matrix.T, da)
             return da_n
 
     def back_outlayer(self,a_out, a, z,y, weight_matrix, b): #删除da参数，感觉没啥用
         dz = a_out - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
-        #weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
-        weight_matrix -= self.learningrate * np.dot(a.T, dz) / 60000
+        print(a_out.shape)
+        weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
         b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
         da_n = np.dot(weight_matrix.T, dz)
         return da_n
@@ -161,7 +160,7 @@ class Nerual_Network(object):
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
                 print(a1.shape,a2.shape)
                 #反向传播
-                dz2=self.back_outlayer(a2,a1,z2,label_data,self.w2,self.b2)
+                dz2=self.back_outlayer(a2,a1,z2,label_data[:,i].reshape(-1, 1),self.w2,self.b2)
                 dz1=self.back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
                 # # 计算da[2]
                 # dz2 = a2 - label_data[:, i].reshape(-1, 1)
@@ -191,11 +190,17 @@ if __name__ == '__main__':
     dl = Nerual_Network(784, 200, 10, 0.1)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
-    print(x_train.shape)
-    dl.train(x_train, y_train)
+    x1_train=x_train[:,5000]
+    y1_train=y_train[:,5000]
+    x1_test=x_test[:,1500]
+    y1_test=y_test[:,1500]
+    #y_train
+    #dl.train(x_train, y_train)
     # 向量化训练方法
 
     # 预测模型
-    dl.predict(x_test, y_test)
+    #dl.predict(x_test, y_test)
     # dl.train_vector(x_train,y_train)
     # dl.predict_vector(x_test,y_test)
+
+    
