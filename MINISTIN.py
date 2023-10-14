@@ -113,43 +113,41 @@ class Nerual_Network(object):
         self.epoch = 3
     # -----------------激活函数-------------------------
 
-    def softmax(X):
-        '''
-        param：X为一个向量
-        return：返回softmax激活值
-        '''
-        X_exp=torch.exp(X)
-        exp_sum=X_exp.sum(dim=1,keepdim=True) 
-        return X_exp/exp_sum
-    def sigmiod(x):
+    def softmax(self,x):
+        exp_x = np.exp(x)
+        return exp_x / np.sum(exp_x, axis=0)
+        
+    def sigmoid(self,x):
         return 1 / (1 + np.exp(-x))
     # def sigmoid_grad(x):
     #     return x*(1-x)
 
     # -----------------前向传播----------------------------
     def forward_hiddenlayer(self,input_data,weight,b):
-        z=np.add(np.dot(input_data,weight),b)
-        return z,softmax(z)
+        z=np.add(np.dot(weight,input_data),b)
+        return z,self.softmax(z)
 
     def forward_outlayer(self,input_data,weight,b):
-        z=np.add(np.dot(input_data,weight),b)
-        return z,sigmoid(z)
+        z=np.add(np.dot(weight,input_data),b)
+        return z,self.sigmoid(z)
     # -----------------反向传播----------------------------
     def back_hiddenlayer(self, a, z, da, weight_matrix, b):
             dz = da * (z * (1 - z)) #sigmoid函数求导
-            weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+            #weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+            weight_matrix -= self.learningrate * np.dot(a.T, dz) / 60000
             b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
             da_n = np.dot(weight_matrix.T, da)
             return da_n
 
-    def back_outlayer(self, a, z,y_label, weight_matrix, b): #删除da参数，感觉没啥用
-        dz = a - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
-        weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+    def back_outlayer(self,a_out, a, z,y, weight_matrix, b): #删除da参数，感觉没啥用
+        dz = a_out - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
+        #weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+        weight_matrix -= self.learningrate * np.dot(a.T, dz) / 60000
         b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
         da_n = np.dot(weight_matrix.T, dz)
         return da_n
     # -----------------交叉熵损失函数-----------------------
-    def crossEntropy(x):
+    def crossEntropy(self,x):
         loss =-np.sum(train_label*np.log(softmax(x)))
         return loss
 
@@ -161,9 +159,10 @@ class Nerual_Network(object):
                 # 前向传播
                 z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+                print(a1.shape,a2.shape)
                 #反向传播
-                dz2=back_outlayer(a2,z2,label_data,self.w2,self.b2)
-                dz1=back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
+                dz2=self.back_outlayer(a2,a1,z2,label_data,self.w2,self.b2)
+                dz1=self.back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
                 # # 计算da[2]
                 # dz2 = a2 - label_data[:, i].reshape(-1, 1)
                 # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
@@ -178,8 +177,8 @@ class Nerual_Network(object):
     def predict(self, input_data, label):
             precision = 0
             for i in range(10000):
-                z1, a1 = self.forward_propagation(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
-                z2, a2 = self.forward_propagation(a1, self.w2, self.b2)
+                z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+                z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
                 print(a2)
                 print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
                 if np.argmax(a2) == label[i]:
@@ -187,4 +186,16 @@ class Nerual_Network(object):
             print("准确率：%d" % (100 * precision / 10000) + "%")
 
 
+if __name__ == '__main__':
+    # 输入层数据维度784，隐藏层100，输出层10
+    dl = Nerual_Network(784, 200, 10, 0.1)
+    x_train, y_train, x_test, y_test = data_fetch_preprocessing()
+    # 循环训练方法
+    print(x_train.shape)
+    dl.train(x_train, y_train)
+    # 向量化训练方法
 
+    # 预测模型
+    dl.predict(x_test, y_test)
+    # dl.train_vector(x_train,y_train)
+    # dl.predict_vector(x_test,y_test)
