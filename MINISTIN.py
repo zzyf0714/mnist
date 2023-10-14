@@ -69,8 +69,8 @@ def data_fetch_preprocessing():
     # data=x_train[:,0].reshape(28,28)
     # plt.imshow(data,cmap='Greys',interpolation=None)
     # plt.show()
-    # x_train = x_train / 255 * 0.99 + 0.01
-    # x_test = x_test / 255 * 0.99 + 0.01
+    x_train = x_train / 255 * 0.99 + 0.01
+    x_test = x_test / 255 * 0.99 + 0.01
 
     # 关闭打开的文件
     train_image.close()
@@ -82,14 +82,36 @@ def data_fetch_preprocessing():
 
 #data_fetch_preprocessing()
 
-
-# ------------------梯度------------------------------
-
-
-
-
-
-
+#------------------搭建神经网络----------------------
+'''
+包括输入层，一层隐藏层，输出层
+输入层节点：784 隐藏层节点：200 输出层节点：100
+隐藏层使用 sigmoid激活函数
+输出层使用 softmax激活函数
+'''
+class Nerual_Network(object):
+    # 初始化神经网络
+    def __init__(self, inputnodes, hiddennodes, outputnodes, learningrate):
+        '''
+        :param inputnodes: 输入层结点数
+        :param hiddennodes: 隐藏层结点数
+        :param outputnodes: 输出层结点数
+        :param learningrate: 学习率
+        '''
+        self.inputnodes = inputnodes
+        self.hiddennodes = hiddennodes
+        self.outputnodes = outputnodes
+        self.learningrate = learningrate
+        # 输入层与隐藏层权重矩阵初始化
+        self.w1 = np.random.randn(self.hiddennodes, self.inputnodes) * 0.01
+        # 隐藏层与输出层权重矩阵初始化
+        self.w2 = np.random.randn(self.outputnodes, self.hiddennodes) * 0.01
+        # 构建第一层常量矩阵100 by 1 matrix
+        self.b1 = np.zeros((200, 1))
+        # 构建第二层常量矩阵 10 by 1 matrix
+        self.b2 = np.zeros((10, 1))
+        # 定义迭代次数
+        self.epoch = 5
 # -----------------激活函数-------------------------
 
 def softmax(X):
@@ -100,19 +122,34 @@ def softmax(X):
     X_exp=torch.exp(X)
     exp_sum=X_exp.sum(dim=1,keepdim=True) 
     return X_exp/exp_sum
+def sigmiod(x):
+    return 1 / (1 + np.exp(-x))
+# def sigmoid_grad(x):
+#     return x*(1-x)
 
 # -----------------前向传播----------------------------
-
-
-
+def forward(self,input_data,weight,b):
+    z=np.add(np.dot(input_data,weight),b)
+    return z,softmax(z)
 
 # -----------------反向传播----------------------------
+def back_hiddenlayer(self, a, z, da, weight_matrix, b):
+        dz = da * (z * (1 - z)) #sigmoid函数求导
+        weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+        b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
+        da_n = np.dot(weight_matrix.T, da)
+        return da_n
 
-
-
-
+def back_outlayer(self, a, z, da, weight_matrix, b):
+    dz = a - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
+    weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+    b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
+    da_n = np.dot(weight_matrix.T, dz)
+    return da_n
 # -----------------交叉熵损失函数-----------------------
-
+def crossEntropy(x):
+    loss =-np.sum(train_label*np.log(softmax(x)))
+    return loss
 
 
 
