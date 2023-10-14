@@ -1,4 +1,3 @@
-'''MINISTIN.py'''
 '''
 • 数据：MNIST data set
 
@@ -112,72 +111,80 @@ class Nerual_Network(object):
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
         self.epoch = 3
-# -----------------激活函数-------------------------
+    # -----------------激活函数-------------------------
 
-def softmax(X):
-    '''
-    param：X为一个向量
-    return：返回softmax激活值
-    '''
-    X_exp=torch.exp(X)
-    exp_sum=X_exp.sum(dim=1,keepdim=True) 
-    return X_exp/exp_sum
-def sigmiod(x):
-    return 1 / (1 + np.exp(-x))
-# def sigmoid_grad(x):
-#     return x*(1-x)
+    def softmax(X):
+        '''
+        param：X为一个向量
+        return：返回softmax激活值
+        '''
+        X_exp=torch.exp(X)
+        exp_sum=X_exp.sum(dim=1,keepdim=True) 
+        return X_exp/exp_sum
+    def sigmiod(x):
+        return 1 / (1 + np.exp(-x))
+    # def sigmoid_grad(x):
+    #     return x*(1-x)
 
-# -----------------前向传播----------------------------
-def forward_hiddenlayer(self,input_data,weight,b):
-    z=np.add(np.dot(input_data,weight),b)
-    return z,softmax(z)
+    # -----------------前向传播----------------------------
+    def forward_hiddenlayer(self,input_data,weight,b):
+        z=np.add(np.dot(input_data,weight),b)
+        return z,softmax(z)
 
-def forward_outlayer(self,input_data,weight,b):
-    z=np.add(np.dot(input_data,weight),b)
-    return z,sigmoid(z)
-# -----------------反向传播----------------------------
-def back_hiddenlayer(self, a, z, da, weight_matrix, b):
-        dz = da * (z * (1 - z)) #sigmoid函数求导
+    def forward_outlayer(self,input_data,weight,b):
+        z=np.add(np.dot(input_data,weight),b)
+        return z,sigmoid(z)
+    # -----------------反向传播----------------------------
+    def back_hiddenlayer(self, a, z, da, weight_matrix, b):
+            dz = da * (z * (1 - z)) #sigmoid函数求导
+            weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+            b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
+            da_n = np.dot(weight_matrix.T, da)
+            return da_n
+
+    def back_outlayer(self, a, z,y_label, weight_matrix, b): #删除da参数，感觉没啥用
+        dz = a - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
         weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
         b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
-        da_n = np.dot(weight_matrix.T, da)
+        da_n = np.dot(weight_matrix.T, dz)
         return da_n
+    # -----------------交叉熵损失函数-----------------------
+    def crossEntropy(x):
+        loss =-np.sum(train_label*np.log(softmax(x)))
+        return loss
 
-def back_outlayer(self, a, z, weight_matrix, b): #删除da参数，感觉没啥用
-    dz = a - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
-    weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
-    b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
-    da_n = np.dot(weight_matrix.T, dz)
-    return da_n
-# -----------------交叉熵损失函数-----------------------
-def crossEntropy(x):
-    loss =-np.sum(train_label*np.log(softmax(x)))
-    return loss
+    # -----------------训练模型----------------------------
+    def train(self, input_data, label_data):
+        for item in range(self.epoch):
+            print('第%d轮次开始执行' % item)
+            for i in range(60000):
+                # 前向传播
+                z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+                z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+                #反向传播
+                dz2=back_outlayer(a2,z2,label_data,self.w2,self.b2)
+                dz1=back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
+                # # 计算da[2]
+                # dz2 = a2 - label_data[:, i].reshape(-1, 1)
+                # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
+                # # 反向传播过程
+                # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
+                # self.b2 -= self.learningrate * dz2
+
+                # self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
+                # self.b1 -= self.learningrate * dz1
+
+    # -----------------预测----------------------------
+    def predict(self, input_data, label):
+            precision = 0
+            for i in range(10000):
+                z1, a1 = self.forward_propagation(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+                z2, a2 = self.forward_propagation(a1, self.w2, self.b2)
+                print(a2)
+                print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
+                if np.argmax(a2) == label[i]:
+                    precision += 1
+            print("准确率：%d" % (100 * precision / 10000) + "%")
 
 
 
-# -----------------训练模型----------------------------
-def train(self, input_data, label_data):
-    for item in range(self.epoch):
-        print('第%d轮次开始执行' % item)
-        for i in range(60000):
-            # 前向传播
-            z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
-            z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
-            #反向传播
-            dz2=back_outlayer(a2,z2,self.w2,self.b2)
-
-            # 计算da[2]
-            dz2 = a2 - label_data[:, i].reshape(-1, 1)
-            dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
-            # 反向传播过程
-            self.w2 -= self.learningrate * np.dot(dz2, a1.T)
-            self.b2 -= self.learningrate * dz2
-
-            self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
-            self.b1 -= self.learningrate * dz1
-
-
-
-
-# -----------------预测----------------------------
