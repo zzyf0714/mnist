@@ -111,7 +111,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 5
+        self.epoch = 3
 # -----------------激活函数-------------------------
 
 def softmax(X):
@@ -128,10 +128,13 @@ def sigmiod(x):
 #     return x*(1-x)
 
 # -----------------前向传播----------------------------
-def forward(self,input_data,weight,b):
+def forward_hiddenlayer(self,input_data,weight,b):
     z=np.add(np.dot(input_data,weight),b)
     return z,softmax(z)
 
+def forward_outlayer(self,input_data,weight,b):
+    z=np.add(np.dot(input_data,weight),b)
+    return z,sigmoid(z)
 # -----------------反向传播----------------------------
 def back_hiddenlayer(self, a, z, da, weight_matrix, b):
         dz = da * (z * (1 - z)) #sigmoid函数求导
@@ -154,7 +157,25 @@ def crossEntropy(x):
 
 
 # -----------------训练模型----------------------------
+def train(self, input_data, label_data):
+    for item in range(self.epoch):
+        print('第%d轮次开始执行' % item)
+        for i in range(60000):
+            # 前向传播
+            z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+            z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+            #反向传播
+            
 
+            # 计算da[2]
+            dz2 = a2 - label_data[:, i].reshape(-1, 1)
+            dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
+            # 反向传播过程
+            self.w2 -= self.learningrate * np.dot(dz2, a1.T)
+            self.b2 -= self.learningrate * dz2
+
+            self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
+            self.b1 -= self.learningrate * dz1
 
 
 
