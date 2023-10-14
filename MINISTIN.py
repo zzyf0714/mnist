@@ -143,7 +143,7 @@ def back_hiddenlayer(self, a, z, da, weight_matrix, b):
         da_n = np.dot(weight_matrix.T, da)
         return da_n
 
-def back_outlayer(self, a, z, da, weight_matrix, b):
+def back_outlayer(self, a, z, weight_matrix, b): #删除da参数，感觉没啥用
     dz = a - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
     weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
     b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
@@ -165,7 +165,7 @@ def train(self, input_data, label_data):
             z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
             z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
             #反向传播
-            
+            dz2=back_outlayer(a2,z2,self.w2,self.b2)
 
             # 计算da[2]
             dz2 = a2 - label_data[:, i].reshape(-1, 1)
