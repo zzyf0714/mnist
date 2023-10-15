@@ -110,7 +110,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 3
+        self.epoch = 10
     # -----------------激活函数-------------------------
 
     def softmax(self,x):
@@ -125,11 +125,11 @@ class Nerual_Network(object):
     # -----------------前向传播----------------------------
     def forward_hiddenlayer(self,input_data,weight,b):
         z=np.add(np.dot(weight,input_data),b)
-        return z,self.softmax(z)
+        return z,self.sigmoid(z)
 
     def forward_outlayer(self,input_data,weight,b):
         z=np.add(np.dot(weight,input_data),b)
-        return z,self.sigmoid(z)
+        return z,self.softmax(z)
     # # -----------------反向传播----------------------------
     # def back_hiddenlayer(self, a, z, da, weight_matrix, b):
     #         dz = da * (z * (1 - z)) #sigmoid函数求导
@@ -158,7 +158,7 @@ class Nerual_Network(object):
                 # 前向传播
                 z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
-                print(a1.shape,a2.shape)
+
                 # #反向传播
                 # dz2=self.back_outlayer(a2,a1,z2,label_data[:,i].reshape(-1, 1),self.w2,self.b2)
                 # dz1=self.back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
@@ -171,36 +171,43 @@ class Nerual_Network(object):
 
                 self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
                 self.b1 -= self.learningrate * dz1
+            self.predict(x_test,y_test)
 
     # -----------------预测----------------------------
     def predict(self, input_data, label):
             precision = 0
-            for i in range(1000):
+            for i in range(10000):
                 z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
-                print(a2)
-                print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
+                #print("a2:",a2)
+                #print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
+                #print("max:",np.argmax(a2))
                 if np.argmax(a2) == label[i]:
                     precision += 1
-            print("准确率：%d" % (100 * precision / 1000) + "%")
+            print("accuracy：%d" % (100 * precision / 10000) + "%")
 
 
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
-    dl = Nerual_Network(784, 200, 10, 0.1)
+    dl = Nerual_Network(784, 200, 10, 0.0001)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
-    x1_train=x_train[:,5000]
-    y1_train=y_train[:,5000]
-    x1_test=x_test[:,1500]
-    y1_test=y_test[:,1500]
+    x1_train=x_train[:,0:10000]
+    y1_train=y_train[:,0:10000]
+    x1_test=x_test[:,0:1500]
+    #y1_test=y_test[:,1500]
     #y_train
     dl.train(x_train, y_train)
     # 向量化训练方法
     
     # 预测模型
     #dl.predict(x_test, y_test)
-    dl.predict(x_train[:,0:1000], y_train[:,0:1000])
+    # y=np.array([])
+    # for i in range(5000):
+    #     y=np.append(y,np.argmax(y_train[:,i]))
+    # # print(y.shape)
+    # dl.predict(x_train[:,0:5000], y)
+    dl.predict(x_test,y_test)
     # dl.train_vector(x_train,y_train)
     # dl.predict_vector(x_test,y_test)
 
