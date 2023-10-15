@@ -130,21 +130,21 @@ class Nerual_Network(object):
     def forward_outlayer(self,input_data,weight,b):
         z=np.add(np.dot(weight,input_data),b)
         return z,self.sigmoid(z)
-    # -----------------反向传播----------------------------
-    def back_hiddenlayer(self, a, z, da, weight_matrix, b):
-            dz = da * (z * (1 - z)) #sigmoid函数求导
-            weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
-            b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
-            da_n = np.dot(weight_matrix.T, da)
-            return da_n
+    # # -----------------反向传播----------------------------
+    # def back_hiddenlayer(self, a, z, da, weight_matrix, b):
+    #         dz = da * (z * (1 - z)) #sigmoid函数求导
+    #         weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+    #         b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
+    #         da_n = np.dot(weight_matrix.T, da)
+    #         return da_n
 
-    def back_outlayer(self,a_out, a, z,y, weight_matrix, b): #删除da参数，感觉没啥用
-        dz = a_out - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
-        print(a_out.shape)
-        weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
-        b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
-        da_n = np.dot(weight_matrix.T, dz)
-        return da_n
+    # def back_outlayer(self,a_out, a, z,y, weight_matrix, b): #删除da参数，感觉没啥用
+    #     dz = a_out - y  # 计算输出层的梯度，其中 a 是 Softmax 输出，y 是真实标签
+    #     print(a_out.shape)
+    #     weight_matrix -= self.learningrate * np.dot(dz, a.T) / 60000
+    #     b -= self.learningrate * np.sum(dz, axis=1, keepdims=True) / 60000
+    #     da_n = np.dot(weight_matrix.T, dz)
+    #     return da_n
     # -----------------交叉熵损失函数-----------------------
     def crossEntropy(self,x):
         loss =-np.sum(train_label*np.log(softmax(x)))
@@ -159,30 +159,30 @@ class Nerual_Network(object):
                 z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
                 print(a1.shape,a2.shape)
-                #反向传播
-                dz2=self.back_outlayer(a2,a1,z2,label_data[:,i].reshape(-1, 1),self.w2,self.b2)
-                dz1=self.back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
-                # # 计算da[2]
-                # dz2 = a2 - label_data[:, i].reshape(-1, 1)
-                # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
-                # # 反向传播过程
-                # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
-                # self.b2 -= self.learningrate * dz2
+                # #反向传播
+                # dz2=self.back_outlayer(a2,a1,z2,label_data[:,i].reshape(-1, 1),self.w2,self.b2)
+                # dz1=self.back_hiddenlayer(input_data[:, i].reshape(-1, 1),z1,dz2,self.w1,self.b1)
+                # 计算da[2]
+                dz2 = a2 - label_data[:, i].reshape(-1, 1)
+                dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
+                # 反向传播过程
+                self.w2 -= self.learningrate * np.dot(dz2, a1.T)
+                self.b2 -= self.learningrate * dz2
 
-                # self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
-                # self.b1 -= self.learningrate * dz1
+                self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
+                self.b1 -= self.learningrate * dz1
 
     # -----------------预测----------------------------
     def predict(self, input_data, label):
             precision = 0
-            for i in range(10000):
+            for i in range(1000):
                 z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
                 print(a2)
                 print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
                 if np.argmax(a2) == label[i]:
                     precision += 1
-            print("准确率：%d" % (100 * precision / 10000) + "%")
+            print("准确率：%d" % (100 * precision / 1000) + "%")
 
 
 if __name__ == '__main__':
@@ -195,11 +195,12 @@ if __name__ == '__main__':
     x1_test=x_test[:,1500]
     y1_test=y_test[:,1500]
     #y_train
-    #dl.train(x_train, y_train)
+    dl.train(x_train, y_train)
     # 向量化训练方法
-
+    
     # 预测模型
     #dl.predict(x_test, y_test)
+    dl.predict(x_train[:,0:1000], y_train[:,0:1000])
     # dl.train_vector(x_train,y_train)
     # dl.predict_vector(x_test,y_test)
 
