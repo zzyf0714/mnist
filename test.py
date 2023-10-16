@@ -11,4 +11,8 @@ def softmax(x):
 # def forward_hiddenlayer(input_data,weight,b):
 #         z=np.add(np.dot(weight,input_data),b)
 #         return z,softmax(z)
-print(softmax([1,2]))
+
+def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+b=np.array([[1,2,3],[2,3,4]])
+print(sigmoid(b))

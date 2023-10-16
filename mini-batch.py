@@ -35,9 +35,6 @@ test_data=torchvision.datasets.MNIST(
     download=True
 )
 
-# train_load=DataLoader(dataset=train_data,batch_size=1000,shuffle=True)
-# test_load=DataLoader(dataset=test_data,batch_size=500,shuffle=True)
-# train_x,train_y=next(iter(train_load))
 
 # 读取原始数据并进行预处理
 def data_fetch_preprocessing():
@@ -110,7 +107,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 20
+        self.epoch = 15
     # -----------------激活函数-------------------------
 
     def softmax(self,x):
@@ -138,38 +135,47 @@ class Nerual_Network(object):
         loss =-np.sum(label_data*np.log(x))
         return loss
 
-    def back_outlayer(self,out,label_data,forward_a):
+    def back_outlayer(self,out,label_data,forward_a,batch_size):
         dz = out - label_data
-        self.w2 -= self.learningrate * np.dot(dz, forward_a.T)
-        self.b2 -= self.learningrate * dz
+        self.w2 -= self.learningrate * np.dot(dz, forward_a.T)/batch_size
+        self.b2 -= self.learningrate * (np.mean(dz,axis=1).reshape(-1,1))
         return dz
-    def back_hiddenlay(self,grad_z,current_a,input_data):
+    def back_hiddenlay(self,grad_z,current_a,input_data,batch_size):
         dz = np.dot(self.w2.T, grad_z) * current_a * (1.0 - current_a) #sigmoid的梯度
-        self.w1 -= self.learningrate * np.dot(dz, (input_data).T)
-        self.b1 -= self.learningrate * dz
+        self.w1 -= self.learningrate * np.dot(dz, (input_data).T)/batch_size
+        self.b1 -= self.learningrate * (np.mean(dz,axis=1).reshape(-1,1))
         return dz
     # -----------------训练模型----------------------------
-    def train(self, input_data, label_data):
+    def train(self, input_data, label_data,train_size,batch_size):
+        batches_x = [input_data[:,i: i+batch_size] for i in range(0, train_size, batch_size)]
+        batches_y = [label_data[:,i: i+batch_size] for i in range(0, train_size, batch_size)]
+        batch_len=len(batches_x)
         for item in range(self.epoch):
-            print('第%d轮次开始执行' % item)
-            for i in range(60000):
-                # 前向传播
-                z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+            print('This is %d epochs' % item)
+            for iteration in range(batch_len):
+                # print('This is %d iterration' % iteration)
+                z1, a1 = self.forward_hiddenlayer(batches_x[iteration], self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
-
-                #print(loss)
                 # 反向传播过程
-                dz2=self.back_outlayer(a2,label_data[:, i].reshape(-1, 1),a1)
-                dz1=self.back_hiddenlay(dz2,a1,input_data[:, i].reshape(-1, 1))
+                dz2=self.back_outlayer(a2,batches_y[iteration],a1,batch_size)
+                dz1=self.back_hiddenlay(dz2,a1,batches_x[iteration],batch_size)
+                # for i in range(batch_size):
+                #     # 前向传播
+                #     z1, a1 = self.forward_hiddenlayer(batches_x[iteration][:, i].reshape(-1, 1), self.w1, self.b1)
+                #     z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
 
-                # dz2 = a2 - label_data[:, i].reshape(-1, 1)
-                # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
-                print(self.w2.shape)
-                # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
-                # self.b2 -= self.learningrate * dz2
+                #     # 反向传播过程
+                #     dz2=self.back_outlayer(a2,label_data[:, i].reshape(-1, 1),a1)
+                #     self.back_hiddenlay(dz2,a1,input_data[:, i].reshape(-1, 1))
 
-                # self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
-                # self.b1 -= self.learningrate * dz1
+                #     # dz2 = a2 - label_data[:, i].reshape(-1, 1)
+                #     # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
+                    
+                #     # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
+                #     # self.b2 -= self.learningrate * dz2
+
+                #     # self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
+                #     # self.b1 -= self.learningrate * dz1
             self.predict(x_test,y_test)
     # -----------------预测----------------------------
     def predict(self, input_data, label):
@@ -182,12 +188,12 @@ class Nerual_Network(object):
                 #print("max:",np.argmax(a2))
                 if np.argmax(a2) == label[i]:
                     precision += 1
-            print("accuracy：%d" % (100 * precision / 10000) + "%")
+            print("accuracy:%d" % (100 * precision / 10000) + "%")
 
 
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
-    dl = Nerual_Network(784, 200, 10, 0.0001)
+    dl = Nerual_Network(784, 200, 10, 0.05)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
     x1_train=x_train[:,0:10000]
@@ -195,9 +201,14 @@ if __name__ == '__main__':
     x1_test=x_test[:,0:1500]
     #y1_test=y_test[:,1500]
     #y_train
-    dl.train(x_train, y_train)
+    batch_size=128
+    train_size=60000
+    # batches_x = [x_train[:,i: i+batch_size] for i in range(0, 10000, batch_size)]
+    # batches_y = [y_train[:,i: i+batch_size] for i in range(0, 10000, batch_size)]
+    # print(batches_y[0].shape)
+    dl.train(x_train, y_train,train_size,batch_size)
     # 向量化训练方法
-    
+    print(dl.learningrate,batch_size)
     # 预测模型
     #dl.predict(x_test, y_test)
     # y=np.array([])
@@ -206,7 +217,7 @@ if __name__ == '__main__':
     # # print(y.shape)
     # dl.predict(x_train[:,0:5000], y)
     dl.predict(x_test,y_test)
-    # dl.train_vector(x_train,y_train)
+    #dl.train_vector(x_train,y_train)
     # dl.predict_vector(x_test,y_test)
 
     
