@@ -98,6 +98,7 @@ class Nerual_Network(object):
         self.hiddennodes = hiddennodes
         self.outputnodes = outputnodes
         self.learningrate = learningrate
+
         # 输入层与隐藏层权重矩阵初始化
         self.w1 = np.random.randn(self.hiddennodes, self.inputnodes) * 0.01
         # 隐藏层与输出层权重矩阵初始化
@@ -132,7 +133,7 @@ class Nerual_Network(object):
     # -----------------交叉熵损失函数-----------------------
     def crossEntropy(self,x,label_data):
         #loss =-np.sum(label_data*np.log(softmax(x)))
-        loss =-np.sum(label_data*np.log(x))
+        loss =-np.sum(label_data*np.log(x))/100
         return loss
 
     def back_outlayer(self,out,label_data,forward_a,batch_size):
@@ -150,74 +151,72 @@ class Nerual_Network(object):
         batches_x = [input_data[:,i: i+batch_size] for i in range(0, train_size, batch_size)]
         batches_y = [label_data[:,i: i+batch_size] for i in range(0, train_size, batch_size)]
         batch_len=len(batches_x)
+        loss=np.array([])
+        losses=np.array([])
+        accuracy=np.array([])
         for item in range(self.epoch):
             print('This is %d epochs' % item)
             for iteration in range(batch_len):
-                # print('This is %d iterration' % iteration)
+
                 z1, a1 = self.forward_hiddenlayer(batches_x[iteration], self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+
                 # 反向传播过程
                 dz2=self.back_outlayer(a2,batches_y[iteration],a1,batch_size)
                 dz1=self.back_hiddenlay(dz2,a1,batches_x[iteration],batch_size)
-                # for i in range(batch_size):
-                #     # 前向传播
-                #     z1, a1 = self.forward_hiddenlayer(batches_x[iteration][:, i].reshape(-1, 1), self.w1, self.b1)
-                #     z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+                loss=np.append(loss,self.crossEntropy(a2,batches_y[iteration]))
+                #print(loss)
+                if(iteration%50==0):
+                    losses=np.append(losses,np.min(loss))
+                    loss=np.array([])
 
-                #     # 反向传播过程
-                #     dz2=self.back_outlayer(a2,label_data[:, i].reshape(-1, 1),a1)
-                #     self.back_hiddenlay(dz2,a1,input_data[:, i].reshape(-1, 1))
-
-                #     # dz2 = a2 - label_data[:, i].reshape(-1, 1)
-                #     # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
-                    
-                #     # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
-                #     # self.b2 -= self.learningrate * dz2
-
-                #     # self.w1 -= self.learningrate * np.dot(dz1, (input_data[:, i].reshape(-1, 1)).T)
-                #     # self.b1 -= self.learningrate * dz1
-            self.predict(x_test,y_test)
+            accuracy=np.append(accuracy,self.predict(x_test,y_test))
+        return losses,accuracy       
     # -----------------预测----------------------------
     def predict(self, input_data, label):
-            precision = 0
-            for i in range(10000):
-                z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
-                z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
-                #print("a2:",a2)
-                #print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
-                #print("max:",np.argmax(a2))
-                if np.argmax(a2) == label[i]:
-                    precision += 1
-            print("accuracy:%d" % (100 * precision / 10000) + "%")
-
+        precision = 0
+        for i in range(10000):
+            z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+            z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+            #print("a2:",a2)
+            #print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
+            #print("max:",np.argmax(a2))
+            if np.argmax(a2) == label[i]:
+                precision += 1
+        accuracy=100 * precision / 10000
+        print("accuracy:%d" % (100 * precision / 10000) + "%")
+        return accuracy
 
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
     dl = Nerual_Network(784, 200, 10, 0.05)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
-    x1_train=x_train[:,0:10000]
-    y1_train=y_train[:,0:10000]
-    x1_test=x_test[:,0:1500]
-    #y1_test=y_test[:,1500]
-    #y_train
-    batch_size=128
-    train_size=60000
-    # batches_x = [x_train[:,i: i+batch_size] for i in range(0, 10000, batch_size)]
-    # batches_y = [y_train[:,i: i+batch_size] for i in range(0, 10000, batch_size)]
-    # print(batches_y[0].shape)
-    dl.train(x_train, y_train,train_size,batch_size)
-    # 向量化训练方法
-    print(dl.learningrate,batch_size)
-    # 预测模型
-    #dl.predict(x_test, y_test)
-    # y=np.array([])
-    # for i in range(5000):
-    #     y=np.append(y,np.argmax(y_train[:,i]))
-    # # print(y.shape)
-    # dl.predict(x_train[:,0:5000], y)
-    dl.predict(x_test,y_test)
-    #dl.train_vector(x_train,y_train)
-    # dl.predict_vector(x_test,y_test)
-
+    # x1_train=x_train[:,0:10000]
+    # y1_train=y_train[:,0:10000]
+    # x1_test=x_test[:,0:1500]
     
+    batch_size=100
+    train_size=60000
+    # losses=np.array([])
+    losses,accuracy=dl.train(x_train, y_train,train_size,batch_size)
+
+    print(dl.learningrate,batch_size)
+
+    # 预测模型
+    dl.predict(x_test,y_test)
+
+    #绘制损失曲线和正确率曲线
+    import matplotlib.pyplot as plt
+
+    plt.plot(losses)
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+    plt.title('Loss Curve')
+    #plt.plot(accuracy)
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Accuracy')
+    # plt.title('Accuracy Curve')
+
+    # 显示图表
+    plt.show()

@@ -164,7 +164,8 @@ class Nerual_Network(object):
 
                 # dz2 = a2 - label_data[:, i].reshape(-1, 1)
                 # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
-                print(self.w2.shape)
+                loss=self.crossEntropy(a2,label_data[:, i].reshape(-1, 1))
+                print(loss)
                 # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
                 # self.b2 -= self.learningrate * dz2
 
