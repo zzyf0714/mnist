@@ -101,7 +101,7 @@ class Nerual_Network(object):
         self.hiddennodes = hiddennodes
         self.outputnodes = outputnodes
         self.learningrate = learningrate
-
+        self.lambd=0.01
         # 输入层与隐藏层权重矩阵初始化
         self.w1 = np.random.randn(self.hiddennodes, self.inputnodes) * 0.01
         # 隐藏层与输出层权重矩阵初始化
@@ -134,19 +134,25 @@ class Nerual_Network(object):
         return z,self.softmax(z)
     
     # -----------------交叉熵损失函数-----------------------
-    def crossEntropy(self,x,label_data):
+    def crossEntropy(self,x,label_data,batch_size):
         #loss =-np.sum(label_data*np.log(softmax(x)))
-        loss =-np.sum(label_data*np.log(x))/128
+        loss =-np.sum(label_data*np.log(x))/batch_size 
         return loss
 
-    def back_outlayer(self,out,label_data,forward_a,batch_size):
+    def crossEntropy_L2(self,x,label_data,batch_size,w1,w2):
+        #loss =-np.sum(label_data*np.log(softmax(x)))
+        loss =-np.sum(label_data*np.log(x))/batch_size 
+        L2_regulation=self.lambd*(np.sum(np.square(w1)) + np.sum(np.square(w2)))/batch_size/2
+        return loss
+
+    def back_outlayer(self,out,label_data,forward_a,batch_size,w2):
         dz = out - label_data
-        self.w2 -= self.learningrate * np.dot(dz, forward_a.T)/batch_size
+        self.w2 -= self.learningrate * np.dot(dz, forward_a.T)/batch_size+ self.lambd / batch_size * w2
         self.b2 -= self.learningrate * (np.mean(dz,axis=1).reshape(-1,1))
         return dz
-    def back_hiddenlay(self,grad_z,current_a,input_data,batch_size):
+    def back_hiddenlay(self,grad_z,current_a,input_data,batch_size,w1):
         dz = np.dot(self.w2.T, grad_z) * current_a * (1.0 - current_a) #sigmoid的梯度
-        self.w1 -= self.learningrate * np.dot(dz, (input_data).T)/batch_size
+        self.w1 -= self.learningrate * np.dot(dz, (input_data).T)/batch_size + self.lambd / batch_size * w1
         self.b1 -= self.learningrate * (np.mean(dz,axis=1).reshape(-1,1))
         return dz
     # -----------------训练模型----------------------------
@@ -165,12 +171,13 @@ class Nerual_Network(object):
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
 
                 # 反向传播过程
-                dz2=self.back_outlayer(a2,batches_y[iteration],a1,batch_size)
-                dz1=self.back_hiddenlay(dz2,a1,batches_x[iteration],batch_size)
-                loss=np.append(loss,self.crossEntropy(a2,batches_y[iteration]))
+                dz2=self.back_outlayer(a2,batches_y[iteration],a1,batch_size,self.w2)
+                dz1=self.back_hiddenlay(dz2,a1,batches_x[iteration],batch_size,self.w1)
+                #loss=np.append(loss,self.crossEntropy(a2,batches_y[iteration]),batch_size)
                 #print(loss)
+                loss=np.append(loss,self.crossEntropy_L2(a2,batches_y[iteration],batch_size,self.w1,self.w2))
                 if(iteration%50==0):
-                    losses=np.append(losses,np.min(loss))
+                    losses=np.append(losses,np.mean(loss))
                     loss=np.array([])
 
             accuracy=np.append(accuracy,self.predict(x_test,y_test))
@@ -192,7 +199,7 @@ class Nerual_Network(object):
 
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
-    dl = Nerual_Network(784, 200, 10, 0.1)
+    dl = Nerual_Network(784, 200, 10, 0.2)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
     # x1_train=x_train[:,0:10000]

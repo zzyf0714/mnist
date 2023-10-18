@@ -111,7 +111,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 50
+        self.epoch = 40
     # -----------------激活函数-------------------------
 
     def softmax(self,x):
@@ -192,7 +192,7 @@ class Nerual_Network(object):
 
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
-    dl = Nerual_Network(784, 200, 10, 0.1)
+    dl = Nerual_Network(784, 200, 10, 0.2)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
     # x1_train=x_train[:,0:10000]
