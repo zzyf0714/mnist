@@ -14,30 +14,11 @@
 • 补充：MINST是一个手写数字数据集，包括了若干手写数字体及其对应的数字，共60000个训练样本，10000个测试样本。每个手写数字被表示为一个28*28的向量。  
 '''
 # ------------------数据预处理------------------------------
-import torchvision
-import torchvision.datasets as datasets
-from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import struct
 
-train_data=torchvision.datasets.MNIST(
-    root='D:\作业\深度学习与神经网络\作业一',
-    train=True,
-    transform=torchvision.transforms.ToTensor(),
-    download=True
-)
-test_data=torchvision.datasets.MNIST(
-    root='D:\作业\深度学习与神经网络\作业一',
-    train=False,
-    transform=torchvision.transforms.ToTensor(),
-    download=True
-)
-
-# train_load=DataLoader(dataset=train_data,batch_size=1000,shuffle=True)
-# test_load=DataLoader(dataset=test_data,batch_size=500,shuffle=True)
-# train_x,train_y=next(iter(train_load))
 
 # 读取原始数据并进行预处理
 def data_fetch_preprocessing():
@@ -110,7 +91,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 20
+        self.epoch = 10
     # -----------------激活函数-------------------------
 
     def softmax(self,x):
@@ -151,7 +132,7 @@ class Nerual_Network(object):
     # -----------------训练模型----------------------------
     def train(self, input_data, label_data):
         for item in range(self.epoch):
-            print('第%d轮次开始执行' % item)
+            print('This is %d epochs' % item)
             for i in range(60000):
                 # 前向传播
                 z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
@@ -165,7 +146,7 @@ class Nerual_Network(object):
                 # dz2 = a2 - label_data[:, i].reshape(-1, 1)
                 # dz1 = np.dot(self.w2.T, dz2) * a1 * (1.0 - a1)
                 loss=self.crossEntropy(a2,label_data[:, i].reshape(-1, 1))
-                print(loss)
+                #print(loss)
                 # self.w2 -= self.learningrate * np.dot(dz2, a1.T)
                 # self.b2 -= self.learningrate * dz2
 
@@ -188,7 +169,7 @@ class Nerual_Network(object):
 
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
-    dl = Nerual_Network(784, 200, 10, 0.0001)
+    dl = Nerual_Network(784, 200, 10, 0.001)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
     # 循环训练方法
     x1_train=x_train[:,0:10000]

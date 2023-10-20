@@ -14,26 +14,10 @@
 • 补充：MINST是一个手写数字数据集，包括了若干手写数字体及其对应的数字，共60000个训练样本，10000个测试样本。每个手写数字被表示为一个28*28的向量。  
 '''
 # ------------------数据预处理------------------------------
-import torchvision
-import torchvision.datasets as datasets
-from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import struct
-
-train_data=torchvision.datasets.MNIST(
-    root='D:\作业\深度学习与神经网络\作业一',
-    train=True,
-    transform=torchvision.transforms.ToTensor(),
-    download=True
-)
-test_data=torchvision.datasets.MNIST(
-    root='D:\作业\深度学习与神经网络\作业一',
-    train=False,
-    transform=torchvision.transforms.ToTensor(),
-    download=True
-)
 
 
 # 读取原始数据并进行预处理
@@ -57,14 +41,13 @@ def data_fetch_preprocessing():
     magic_t, n_t = struct.unpack('>II',test_label.read(8))
     y_test = np.fromfile(test_label,dtype=np.uint8).reshape(10000, 1)
     # print(y_train[0])
-    # print(len(labels))
     magic, num, rows, cols = struct.unpack('>IIII', train_image.read(16))
     x_train = np.fromfile(train_image, dtype=np.uint8).reshape(len(y_train_label), 784).T
 
     magic_2, num_2, rows_2, cols_2 = struct.unpack('>IIII', test_image.read(16))
     x_test = np.fromfile(test_image, dtype=np.uint8).reshape(len(y_test), 784).T
     # print(x_train.shape)
-    # 可以通过这个函数观察图像
+    # 观察图像
     # data=x_train[:,0].reshape(28,28)
     # plt.imshow(data,cmap='Greys',interpolation=None)
     # plt.show()
@@ -101,7 +84,7 @@ class Nerual_Network(object):
         self.hiddennodes = hiddennodes
         self.outputnodes = outputnodes
         self.learningrate = learningrate
-        self.lambd=0.01
+        self.lambd=0.08
         # 输入层与隐藏层权重矩阵初始化
         self.w1 = np.random.randn(self.hiddennodes, self.inputnodes) * 0.01
         # 隐藏层与输出层权重矩阵初始化
@@ -111,7 +94,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 50
+        self.epoch = 40
     # -----------------激活函数-------------------------
 
     def softmax(self,x):
@@ -163,6 +146,7 @@ class Nerual_Network(object):
         loss=np.array([])
         losses=np.array([])
         accuracy=np.array([])
+        losses_test=np.array([])
         for item in range(self.epoch):
             print('This is %d epochs' % item)
             for iteration in range(batch_len):
@@ -176,39 +160,51 @@ class Nerual_Network(object):
                 #loss=np.append(loss,self.crossEntropy(a2,batches_y[iteration]),batch_size)
                 #print(loss)
                 loss=np.append(loss,self.crossEntropy_L2(a2,batches_y[iteration],batch_size,self.w1,self.w2))
-                if(iteration%50==0):
+                if(iteration%10==0):
                     losses=np.append(losses,np.mean(loss))
                     loss=np.array([])
-
+            # print("validation:")
+            # accuracy=np.append(accuracy,self.predict(x1_train,y1))
+            print("test:")
             accuracy=np.append(accuracy,self.predict(x_test,y_test))
-        return losses,accuracy       
+            # losses_test=self.predict_loss(x_test,y_test)
+        return losses,accuracy     
     # -----------------预测----------------------------
     def predict(self, input_data, label):
         precision = 0
         for i in range(10000):
             z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
             z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
-            #print("a2:",a2)
             #print('模型预测值为:{0},\n实际值为{1}'.format(np.argmax(a2), label[i]))
-            #print("max:",np.argmax(a2))
+
             if np.argmax(a2) == label[i]:
                 precision += 1
         accuracy=100 * precision / 10000
         print("accuracy:%d" % (100 * precision / 10000) + "%")
         return accuracy
 
+    # def predict_loss(self, input_data, label):
+    #     loss_test=np.array([])
+    #     losses_test=np.array([])
+    #     for i in range(10000):
+    #         z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+    #         z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+    #         loss_test=np.append(loss_test,self.crossEntropy_L2(a2,label[i],batch_size,self.w1,self.w2))
+    #         if(i%50==0):
+    #             losses_test=np.append(losses_test,np.mean(loss_test))
+    #             loss_test=np.array([])
+    #     return losses_test
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
     dl = Nerual_Network(784, 200, 10, 0.2)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
-    # 循环训练方法
-    # x1_train=x_train[:,0:10000]
-    # y1_train=y_train[:,0:10000]
-    # x1_test=x_test[:,0:1500]
-    
+
+    # 验证集划分
+    x_validation=x_train[:,0:10000]
+    y_validation=np.argmax(y_train[:,0:10000],axis=0)
+
     batch_size=128
     train_size=60000
-    # losses=np.array([])
     losses,accuracy=dl.train(x_train, y_train,train_size,batch_size)
 
     print(dl.learningrate,batch_size)
@@ -220,6 +216,8 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     plt.plot(losses)
+    # plt.plot(losses_test)
+    # plt.legend()
     plt.xlabel('Iteration')
     plt.ylabel('Loss')
     plt.title('Loss Curve')

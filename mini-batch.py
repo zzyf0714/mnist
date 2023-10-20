@@ -14,26 +14,10 @@
 • 补充：MINST是一个手写数字数据集，包括了若干手写数字体及其对应的数字，共60000个训练样本，10000个测试样本。每个手写数字被表示为一个28*28的向量。  
 '''
 # ------------------数据预处理------------------------------
-import torchvision
-import torchvision.datasets as datasets
-from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import struct
-
-train_data=torchvision.datasets.MNIST(
-    root='D:\作业\深度学习与神经网络\作业一',
-    train=True,
-    transform=torchvision.transforms.ToTensor(),
-    download=True
-)
-test_data=torchvision.datasets.MNIST(
-    root='D:\作业\深度学习与神经网络\作业一',
-    train=False,
-    transform=torchvision.transforms.ToTensor(),
-    download=True
-)
 
 
 # 读取原始数据并进行预处理
@@ -101,6 +85,8 @@ class Nerual_Network(object):
         self.hiddennodes = hiddennodes
         self.outputnodes = outputnodes
         self.learningrate = learningrate
+        self.precision_test=np.array([])
+        self.Recall_test=np.array([])
 
         # 输入层与隐藏层权重矩阵初始化
         self.w1 = np.random.randn(self.hiddennodes, self.inputnodes) * 0.01
@@ -111,7 +97,7 @@ class Nerual_Network(object):
         # 构建第二层常量矩阵 10 by 1 matrix
         self.b2 = np.zeros((10, 1))
         # 定义迭代次数
-        self.epoch = 40
+        self.epoch = 10
     # -----------------激活函数-------------------------
 
     def softmax(self,x):
@@ -127,18 +113,26 @@ class Nerual_Network(object):
     # -----------------前向传播----------------------------
     def forward_hiddenlayer(self,input_data,weight,b):
         z=np.add(np.dot(weight,input_data),b)
+        #print(self.sigmoid(z)[:,0])
         return z,self.sigmoid(z)
 
     def forward_outlayer(self,input_data,weight,b):
         z=np.add(np.dot(weight,input_data),b)
+        #print(self.softmax(z)[:,0])
         return z,self.softmax(z)
     
     # -----------------交叉熵损失函数-----------------------
     def crossEntropy(self,x,label_data):
         #loss =-np.sum(label_data*np.log(softmax(x)))
-        loss =-np.sum(label_data*np.log(x))/128
+        loss =-np.sum(label_data*np.log(x))/batch_size
         return loss
 
+    # -----------------均方误差损失函数-----------------------
+    def MSE(self,x,label_data):
+        loss=np.mean(np.square(x-label_data),axis=1)
+        return loss
+
+    # --------------------反向传播----------------------------
     def back_outlayer(self,out,label_data,forward_a,batch_size):
         dz = out - label_data
         self.w2 -= self.learningrate * np.dot(dz, forward_a.T)/batch_size
@@ -153,6 +147,9 @@ class Nerual_Network(object):
     def train(self, input_data, label_data,train_size,batch_size):
         batches_x = [input_data[:,i: i+batch_size] for i in range(0, train_size, batch_size)]
         batches_y = [label_data[:,i: i+batch_size] for i in range(0, train_size, batch_size)]
+        random_num=np.random.permutation(input_data.shape[1])[:batch_size]
+        SGD_x=input_data[:,random_num]
+        SGD_y=label_data[:,random_num]
         batch_len=len(batches_x)
         loss=np.array([])
         losses=np.array([])
@@ -160,20 +157,28 @@ class Nerual_Network(object):
         for item in range(self.epoch):
             print('This is %d epochs' % item)
             for iteration in range(batch_len):
-
+                # random_num=np.random.permutation(input_data.shape[1])[:batch_size]
+                # SGD_x=input_data[:,random_num]
+                # SGD_y=label_data[:,random_num]
                 z1, a1 = self.forward_hiddenlayer(batches_x[iteration], self.w1, self.b1)
+                # z1, a1 = self.forward_hiddenlayer(SGD_x, self.w1, self.b1)
                 z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
 
                 # 反向传播过程
-                dz2=self.back_outlayer(a2,batches_y[iteration],a1,batch_size)
-                dz1=self.back_hiddenlay(dz2,a1,batches_x[iteration],batch_size)
+                dz2=self.back_outlayer(a2,batches_y[iteration],a1,batches_y[iteration].shape[1])
+                dz1=self.back_hiddenlay(dz2,a1,batches_x[iteration],batches_x[iteration].shape[1])
                 loss=np.append(loss,self.crossEntropy(a2,batches_y[iteration]))
-                #print(loss)
-                if(iteration%50==0):
-                    losses=np.append(losses,np.min(loss))
+                
+                # dz2=self.back_outlayer(a2,SGD_y,a1,batch_size)
+                # dz1=self.back_hiddenlay(dz2,a1,SGD_x,batch_size)
+                # loss=np.append(loss,self.crossEntropy(a2,SGD_y))
+                if(iteration%10==0):
+                    #print(loss)
+                    losses=np.append(losses,np.mean(loss))
                     loss=np.array([])
 
             accuracy=np.append(accuracy,self.predict(x_test,y_test))
+            #print(losses)
         return losses,accuracy       
     # -----------------预测----------------------------
     def predict(self, input_data, label):
@@ -190,6 +195,22 @@ class Nerual_Network(object):
         print("accuracy:%d" % (100 * precision / 10000) + "%")
         return accuracy
 
+    def precision(self, input_data, label):
+        p=0
+        p1=0
+        p2=0
+        for i in range(10000):
+            z1, a1 = self.forward_hiddenlayer(input_data[:, i].reshape(-1, 1), self.w1, self.b1)
+            z2, a2 = self.forward_outlayer(a1, self.w2, self.b2)
+            self.precision_test=np.append(self.precision_test,precision)
+            print("%d precision: %d%%" % (j, precision))
+            self.Recall(p,p2,j)
+
+    def Recall(self,p,p2,j):
+        Recall=100 * p / p2
+        self.Recall_test=np.append(self.Recall_test,Recall)
+        print("%d Recall:%d%%" % (j,Recall))
+
 if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
     dl = Nerual_Network(784, 200, 10, 0.2)
@@ -199,6 +220,8 @@ if __name__ == '__main__':
     # y1_train=y_train[:,0:10000]
     # x1_test=x_test[:,0:1500]
     
+    # 验证集划分
+    
     batch_size=128
     train_size=60000
     # losses=np.array([])
@@ -206,9 +229,10 @@ if __name__ == '__main__':
 
     print(dl.learningrate,batch_size)
 
+    
     # 预测模型
     dl.predict(x_test,y_test)
-
+    dl.precision(x_test,y_test)
     #绘制损失曲线和正确率曲线
     import matplotlib.pyplot as plt
 
@@ -216,7 +240,7 @@ if __name__ == '__main__':
     plt.xlabel('Iteration')
     plt.ylabel('Loss')
     plt.title('Loss Curve')
-    #plt.plot(accuracy)
+    # plt.plot(accuracy)
     # plt.xlabel('Epoch')
     # plt.ylabel('Accuracy')
     # plt.title('Accuracy Curve')
