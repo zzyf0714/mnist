@@ -171,24 +171,15 @@ if __name__ == '__main__':
     # 输入层数据维度784，隐藏层100，输出层10
     dl = Nerual_Network(784, 200, 10, 0.001)
     x_train, y_train, x_test, y_test = data_fetch_preprocessing()
-    # 循环训练方法
-    x1_train=x_train[:,0:10000]
-    y1_train=y_train[:,0:10000]
-    x1_test=x_test[:,0:1500]
-    #y1_test=y_test[:,1500]
-    #y_train
+    # 验证集划分
+    x_validation=x_train[:,0:10000]
+    y_validation=np.argmax(y_train[:,0:10000],axis=0)
+    
     dl.train(x_train, y_train)
     # 向量化训练方法
     
     # 预测模型
-    #dl.predict(x_test, y_test)
-    # y=np.array([])
-    # for i in range(5000):
-    #     y=np.append(y,np.argmax(y_train[:,i]))
-    # # print(y.shape)
-    # dl.predict(x_train[:,0:5000], y)
+   
     dl.predict(x_test,y_test)
-    # dl.train_vector(x_train,y_train)
-    # dl.predict_vector(x_test,y_test)
 
     
